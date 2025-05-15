@@ -33,7 +33,7 @@ def load_data_and_model():
                            np.where(df['home_score'] < df['away_score'], 'away_win', 'draw'))
     
     tournament_counts = df['tournament'].value_counts()
-    rare_tournaments = tournament_counts[tournament_counts < 500].index
+    rare_tournaments = tournament_counts[tournament_counts < 100].index
     df['tournament'] = df['tournament'].replace(rare_tournaments, 'Other')
     
     # Prepare features and target
