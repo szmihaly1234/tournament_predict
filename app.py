@@ -15,7 +15,14 @@ model = load_model()
 # 📌 Feature oszlopok betöltése
 with open("feature_columns.pkl", "rb") as f:
     feature_columns = pickle.load(f)
+# Hiányzó oszlopok pótlása az eredeti struktúrához
+for col in feature_columns:
+    if col not in input_data.columns:
+        input_data[col] = 0  # Hiányzó oszlopok kitöltése 0-val
 
+# Feature-k rendezése az eredeti struktúra szerint
+input_data = input_data[feature_columns]
+print("Input shape (ellenőrzés):", input_data.shape)
 # 📌 Scaler betöltése
 scaler = StandardScaler()
 scaler.mean_ = np.load("scaler_mean.npy", allow_pickle=True)
@@ -30,8 +37,8 @@ st.title("⚽ Labdarúgó Mérkőzések Torna Predikciója")
 home_team = st.text_input("Hazai csapat neve")
 away_team = st.text_input("Vendég csapat neve")
 year = st.number_input("Év", min_value=1872, max_value=2025, value=2024)
-month = st.number_input("Hónap", min_value=1, max_value=12, value=6)
-day_of_week = st.number_input("A hét napja (0=Hétfő, 6=Vasárnap)", min_value=0, max_value=6, value=3)
+month = st.number_input("Hónap", min_value=1, max_value=12, value=7)
+day_of_week = st.number_input("A hét napja (1=Hétfő, 7=Vasárnap)", min_value=1, max_value=7, value=3)
 result = st.selectbox("Mérkőzés eredménye", ["home_win", "away_win", "draw"])
 
 if st.button("Előrejelzés"):
