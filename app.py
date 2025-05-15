@@ -5,24 +5,27 @@ import numpy as np
 import pickle
 from sklearn.preprocessing import StandardScaler
 
-# Modell betöltése
+# 📌 Modell betöltése
 @st.cache_resource
 def load_model():
     return tf.keras.models.load_model("football_match_model.h5")
 
 model = load_model()
 
-# Feature oszlopok betöltése
+# 📌 Feature oszlopok betöltése
 with open("feature_columns.pkl", "rb") as f:
     feature_columns = pickle.load(f)
 
-# Scaler betöltése
+# 📌 Scaler betöltése
+scaler = StandardScaler()
+scaler.mean_ = np.load("scaler_mean.npy", allow_pickle=True)
+scaler.scale_ = np.load("scaler_scale.npy", allow_pickle=True)
 
-# Label Encoder osztályok betöltése
+# 📌 Label Encoder osztályok betöltése
 le_classes = np.load("label_encoder_classes.npy", allow_pickle=True)
 
-# Streamlit App
-st.title("Labdarúgó Mérkőzések Torna Predikciója")
+# 📌 Streamlit App - UI
+st.title("⚽ Labdarúgó Mérkőzések Torna Predikciója")
 
 home_team = st.text_input("Hazai csapat neve")
 away_team = st.text_input("Vendég csapat neve")
@@ -32,25 +35,27 @@ day_of_week = st.number_input("A hét napja (0=Hétfő, 6=Vasárnap)", min_value
 result = st.selectbox("Mérkőzés eredménye", ["home_win", "away_win", "draw"])
 
 if st.button("Előrejelzés"):
-    # Adatok előkészítése
+    # 📌 Adatok előkészítése
     input_data = pd.DataFrame({'home_team': [home_team], 'away_team': [away_team], 'year': [year], 
                                'month': [month], 'day_of_week': [day_of_week], 'result': [result]})
     input_data = pd.get_dummies(input_data)  # Kategorikus adatok one-hot encodingja
 
-    # Hiányzó oszlopok pótlása az eredeti feature struktúrához
+    # 📌 Hiányzó oszlopok pótlása a tanító adatstruktúrához
     for col in feature_columns:
         if col not in input_data.columns:
-            input_data[col] = 0
+            input_data[col] = 0  # Hiányzó értékek feltöltése nullával
 
-    # Rendezés az eredeti feature sorrendhez
+    # 📌 Feature-k rendezése az eredeti sorrend szerint
     input_data = input_data[feature_columns]
-    scaler = StandardScaler()
 
-    # Scaling
-    input_scaled = scaler.(input_data)
+    # 📌 Ellenőrzés
+    print("Input shape:", input_data.shape)  # Ennek (1,565)-nek kell lennie!
 
-    # Predikció
+    # 📌 Skálázás
+    input_scaled = scaler.transform(input_data)
+
+    # 📌 Predikció
     prediction = model.predict(input_scaled)
     predicted_class = np.argmax(prediction)
 
-    st.subheader(f"Előrejelzett torna típusa: {le_classes[predicted_class]}")
+    st.subheader(f"🔮 Előrejelzett torna típusa: {le_classes[predicted_class]}")
