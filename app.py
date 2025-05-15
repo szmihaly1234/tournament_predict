@@ -7,7 +7,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 # Modell betöltése
 @st.cache_resource
 def load_model():
-    model = tf.keras.models.load_model("football_model.h5")
+    model = tf.keras.models.load_model("football_match_model.h5")
     return model
 
 model = load_model()
