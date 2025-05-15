@@ -18,7 +18,7 @@ st.set_page_config(
 @st.cache_resource
 def load_components():
     # Modell betöltése
-    model = load_model('football_tournament_model.h5')
+    model = load_model('football_match_model.h5')
     
     # Preprocesszor és label encoder betöltése
     with open('preprocessor.pkl', 'rb') as f:
