@@ -49,7 +49,7 @@ if st.button("Előrejelzés"):
     input_data = input_data[feature_columns]
 
     # Scaling
-    input_scaled = scaler.transform(input_data)
+    input_scaled = scaler.fit_transform(input_data)
 
     # Predikció
     prediction = model.predict(input_scaled)
