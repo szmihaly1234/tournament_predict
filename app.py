@@ -154,8 +154,8 @@ if submitted:
         st.write(f"Confidence: {confidence:.2%}")
         
         # Show top 3 predictions
-        top3 = np.argsort(prediction[0])[-3:][::-1]
-        st.write("\nTop 3 Predictions:")
+        top3 = np.argsort(prediction[0])[-10:][::-1]
+        st.write("\nTop 10 Predictions:")
         for i, idx in enumerate(top3):
             st.write(f"{i+1}. {le.inverse_transform([idx])[0]} ({prediction[0][idx]:.2%})")
     
