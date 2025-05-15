@@ -19,7 +19,7 @@ def load_artifacts():
     
     # Load team lists from original data
     df = pd.read_csv('all_matches.csv')
-    unique_teams = sorted(list(set(df['home_team'].unique()).union(set(df['away_team'].unique())))
+    unique_teams = sorted(list(set(df['home_team'].unique()).union(set(df['away_team'].unique()))))
     
     return model, le, scaler, onehot_columns, unique_teams
 
