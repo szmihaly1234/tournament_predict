@@ -17,9 +17,6 @@ with open("feature_columns.pkl", "rb") as f:
     feature_columns = pickle.load(f)
 
 # Scaler betöltése
-scaler = StandardScaler()
-scaler.mean_ = np.load("scaler_mean.npy", allow_pickle=True)
-scaler.scale_ = np.load("scaler_scale.npy", allow_pickle=True)
 
 # Label Encoder osztályok betöltése
 le_classes = np.load("label_encoder_classes.npy", allow_pickle=True)
@@ -47,6 +44,7 @@ if st.button("Előrejelzés"):
 
     # Rendezés az eredeti feature sorrendhez
     input_data = input_data[feature_columns]
+    scaler = StandardScaler()
 
     # Scaling
     input_scaled = scaler.(input_data)
