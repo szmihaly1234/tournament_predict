@@ -15,10 +15,6 @@ model = load_model()
 # 📌 Feature oszlopok betöltése
 with open("feature_columns.pkl", "rb") as f:
     feature_columns = pickle.load(f)
-# Hiányzó oszlopok pótlása az eredeti struktúrához
-for col in feature_columns:
-    if col not in input_data.columns:
-        input_data[col] = 0  # Hiányzó oszlopok kitöltése 0-val
 
 # Feature-k rendezése az eredeti struktúra szerint
 input_data = input_data[feature_columns]
