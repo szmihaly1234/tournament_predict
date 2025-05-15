@@ -16,9 +16,6 @@ model = load_model()
 with open("feature_columns.pkl", "rb") as f:
     feature_columns = pickle.load(f)
 
-# Feature-k rendezése az eredeti struktúra szerint
-input_data = input_data[feature_columns]
-print("Input shape (ellenőrzés):", input_data.shape)
 # 📌 Scaler betöltése
 scaler = StandardScaler()
 scaler.mean_ = np.load("scaler_mean.npy", allow_pickle=True)
