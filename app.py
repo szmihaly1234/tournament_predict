@@ -14,18 +14,16 @@ def load_artifacts():
         le = pickle.load(f)
     with open('scaler.pkl', 'rb') as f:
         scaler = pickle.load(f)
-    with open('feature_columns.pkl', 'rb') as f:
-        feature_columns = pickle.load(f)
+    with open('onehot_columns.pkl', 'rb') as f:
+        onehot_columns = pickle.load(f)
     
-    # Load original data for team lists
+    # Load team lists from original data
     df = pd.read_csv('all_matches.csv')
-    unique_home_teams = sorted(df['home_team'].unique())
-    unique_away_teams = sorted(df['away_team'].unique())
-    unique_teams = sorted(list(set(unique_home_teams).union(set(unique_away_teams))))
+    unique_teams = sorted(list(set(df['home_team'].unique()).union(set(df['away_team'].unique())))
     
-    return model, le, scaler, feature_columns, unique_teams
+    return model, le, scaler, onehot_columns, unique_teams
 
-model, le, scaler, feature_columns, unique_teams = load_artifacts()
+model, le, scaler, onehot_columns, unique_teams = load_artifacts()
 
 # Create the Streamlit UI
 st.title("Football Tournament Predictor")
@@ -50,28 +48,34 @@ if submitted:
         day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, 
                  "Friday": 4, "Saturday": 5, "Sunday": 6}
         
-        # Create input dataframe with the exact same structure as training data
-        input_data = {
-            'home_team': [home_team],
-            'away_team': [away_team],
-            'year': [year],
-            'month': [month],
-            'day_of_week': [day_map[day_of_week]],
-            'result': [result]
-        }
+        # Create a DataFrame with all columns from training, initialized to 0
+        X = pd.DataFrame(0, index=[0], columns=onehot_columns)
         
-        # Create a DataFrame with all possible columns initialized to 0
-        X = pd.DataFrame(0, index=[0], columns=feature_columns)
+        # Set the appropriate one-hot encoded columns
+        home_col = f"home_team_{home_team}"
+        away_col = f"away_team_{away_team}"
+        result_col = f"result_{result}"
         
-        # Set the appropriate columns to 1 based on input
-        X[f"home_team_{home_team}"] = 1
-        X[f"away_team_{away_team}"] = 1
-        X[f"result_{result}"] = 1
+        if home_col in X.columns:
+            X[home_col] = 1
+        else:
+            st.warning(f"Home team '{home_team}' not in training data. Using default values.")
         
-        # Set the numerical columns
+        if away_col in X.columns:
+            X[away_col] = 1
+        else:
+            st.warning(f"Away team '{away_team}' not in training data. Using default values.")
+        
+        if result_col in X.columns:
+            X[result_col] = 1
+        
+        # Set numerical features
         X['year'] = year
         X['month'] = month
         X['day_of_week'] = day_map[day_of_week]
+        
+        # Ensure we only keep columns that were in training
+        X = X[onehot_columns]
         
         # Scale the features
         X_scaled = scaler.transform(X)
