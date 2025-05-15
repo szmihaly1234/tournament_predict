@@ -12,7 +12,6 @@ def load_model():
 
 model = load_model()
 
-# 📌 Feature oszlopok betöltése
 with open("feature_columns.pkl", "rb") as f:
     feature_columns = pickle.load(f)
 
@@ -21,41 +20,25 @@ scaler = StandardScaler()
 scaler.mean_ = np.load("scaler_mean.npy", allow_pickle=True)
 scaler.scale_ = np.load("scaler_scale.npy", allow_pickle=True)
 
-# 📌 Label Encoder osztályok betöltése
-le_classes = np.load("label_encoder_classes.npy", allow_pickle=True)
+# 📌 Felhasználói bemenet példája (weboldalról)
+input_data = pd.DataFrame({'year': [2024], 'month': [6], 'day_of_week': [3], 
+                           'home_team': ['Brazil'], 'away_team': ['Argentina'], 'result': ['home_win']})
 
-# 📌 Streamlit App - UI
-st.title("⚽ Labdarúgó Mérkőzések Torna Predikciója")
+# 📌 One-hot encoding a kategorikus változóknak
+input_data = pd.get_dummies(input_data)
 
-home_team = st.text_input("Hazai csapat neve")
-away_team = st.text_input("Vendég csapat neve")
-year = st.number_input("Év", min_value=1872, max_value=2025, value=2024)
-month = st.number_input("Hónap", min_value=1, max_value=12, value=7)
-day_of_week = st.number_input("A hét napja (1=Hétfő, 7=Vasárnap)", min_value=1, max_value=7, value=3)
-result = st.selectbox("Mérkőzés eredménye", ["home_win", "away_win", "draw"])
+# 📌 Hiányzó oszlopok kitöltése a tanítási adatszerkezet alapján
+for col in feature_columns:
+    if col not in input_data.columns:
+        input_data[col] = 0  # Hiányzó oszlopok pótlása nullával
 
-if st.button("Előrejelzés"):
-    # 📌 Adatok előkészítése
-    input_data = pd.DataFrame({'home_team': [home_team], 'away_team': [away_team], 'year': [year], 
-                               'month': [month], 'day_of_week': [day_of_week], 'result': [result]})
-    input_data = pd.get_dummies(input_data)  # Kategorikus adatok one-hot encodingja
+# 📌 Feature-k rendezése az eredeti sorrend szerint
+input_data = input_data[feature_columns]
 
-    # 📌 Hiányzó oszlopok pótlása a tanító adatstruktúrához
-    for col in feature_columns:
-        if col not in input_data.columns:
-            input_data[col] = 0  # Hiányzó értékek feltöltése nullával
+# 📌 Input alak ellenőrzése
+print("Input shape (ellenőrzés):", input_data.shape)  # Ennek (1,565)-nek kell lennie!
 
-    # 📌 Feature-k rendezése az eredeti sorrend szerint
-    input_data = input_data[feature_columns]
+# 📌 Skálázás (az eredeti scaler-rel)
+input_scaled = scaler.transform(input_data)
+print("Scaled input shape:", input_scaled.shape)  # Ennek is (1,565)-nek kell lennie!
 
-    # 📌 Ellenőrzés
-    print("Input shape:", input_data.shape)  # Ennek (1,565)-nek kell lennie!
-
-    # 📌 Skálázás
-    input_scaled = scaler.transform(input_data)
-
-    # 📌 Predikció
-    prediction = model.predict(input_scaled)
-    predicted_class = np.argmax(prediction)
-
-    st.subheader(f"🔮 Előrejelzett torna típusa: {le_classes[predicted_class]}")
