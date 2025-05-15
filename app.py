@@ -18,13 +18,13 @@ st.title("Football Match Tournament Predictor")
 # Sidebar for user inputs
 st.sidebar.header("Match Details")
 
-# Load data and preprocess
+# Load data, preprocess, and get feature columns
 @st.cache_resource
 def load_data_and_model():
     # Load data
     df = pd.read_csv('all_matches.csv')
     
-    # Preprocessing (same as your original code)
+    # Preprocessing
     df['date'] = pd.to_datetime(df['date'])
     df['year'] = df['date'].dt.year
     df['month'] = df['date'].dt.month
@@ -40,6 +40,9 @@ def load_data_and_model():
     features = ['home_team', 'away_team', 'year', 'month', 'day_of_week', 'result']
     X = pd.get_dummies(df[features])
     y = df['tournament']
+    
+    # Save the feature columns for later use
+    feature_columns = X.columns.tolist()
     
     # Train model
     le = LabelEncoder()
@@ -75,12 +78,12 @@ def load_data_and_model():
     # Train model (in a real deployment, you'd load a pre-trained model)
     model.fit(X_train, y_train_cat, epochs=10, batch_size=64, verbose=0)
     
-    return model, le, scaler, features
+    return model, le, scaler, features, feature_columns
 
 # Load model and encoders
-model, le, scaler, features = load_data_and_model()
+model, le, scaler, features, feature_columns = load_data_and_model()
 
-# Get unique teams from the dataset (in a real app, you'd cache this)
+# Get unique teams from the dataset
 @st.cache_data
 def get_unique_teams():
     df = pd.read_csv('all_matches.csv')
@@ -102,8 +105,7 @@ with st.sidebar.form("match_details"):
     
     submitted = st.form_submit_button("Predict Tournament")
 
-# When form is submitted
-if submitted:
+def prepare_input(home_team, away_team, year, month, day_of_week, result, feature_columns):
     # Map day of week to number
     day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, 
                "Friday": 4, "Saturday": 5, "Sunday": 6}
@@ -119,28 +121,43 @@ if submitted:
         'result': [result]
     })
     
-    # One-hot encode and scale
+    # One-hot encode
     X_input = pd.get_dummies(input_data)
     
-    # Ensure all columns are present (in case new teams are selected)
-    # This is a simplified approach - in production you'd need to handle this more carefully
-    X_input = X_input.reindex(columns=features, fill_value=0)
+    # Ensure all columns are present and in correct order
+    for col in feature_columns:
+        if col not in X_input.columns:
+            X_input[col] = 0
     
-    # Scale
-    X_input_scaled = scaler.transform(X_input)
+    # Reorder columns to match training data
+    X_input = X_input[feature_columns]
     
-    # Predict
-    prediction = model.predict(X_input_scaled)
-    predicted_class = le.inverse_transform([np.argmax(prediction)])[0]
-    confidence = np.max(prediction)
+    return X_input
+
+# When form is submitted
+if submitted:
+    try:
+        # Prepare input data
+        X_input = prepare_input(home_team, away_team, year, month, day_of_week, result, feature_columns)
+        
+        # Scale
+        X_input_scaled = scaler.transform(X_input)
+        
+        # Predict
+        prediction = model.predict(X_input_scaled)
+        predicted_class = le.inverse_transform([np.argmax(prediction)])[0]
+        confidence = np.max(prediction)
+        
+        # Display results
+        st.subheader("Prediction Results")
+        st.write(f"Predicted Tournament: **{predicted_class}**")
+        st.write(f"Confidence: {confidence:.2%}")
+        
+        # Show top 3 predictions
+        top3 = np.argsort(prediction[0])[-3:][::-1]
+        st.write("\nTop 3 Predictions:")
+        for i, idx in enumerate(top3):
+            st.write(f"{i+1}. {le.inverse_transform([idx])[0]} ({prediction[0][idx]:.2%})")
     
-    # Display results
-    st.subheader("Prediction Results")
-    st.write(f"Predicted Tournament: **{predicted_class}**")
-    st.write(f"Confidence: {confidence:.2%}")
-    
-    # Show top 3 predictions
-    top3 = np.argsort(prediction[0])[-3:][::-1]
-    st.write("\nTop 3 Predictions:")
-    for i, idx in enumerate(top3):
-        st.write(f"{i+1}. {le.inverse_transform([idx])[0]} ({prediction[0][idx]:.2%})")
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
