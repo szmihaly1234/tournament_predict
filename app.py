@@ -17,9 +17,11 @@ def load_artifacts():
     with open('feature_columns.pkl', 'rb') as f:
         feature_columns = pickle.load(f)
     
-    # Betöltjük az eredeti adatokat a csapatok listájához
+    # Load original data for team lists
     df = pd.read_csv('all_matches.csv')
-    unique_teams = sorted(list(set(df['home_team'].unique()).union(set(df['away_team'].unique()))))
+    unique_home_teams = sorted(df['home_team'].unique())
+    unique_away_teams = sorted(df['away_team'].unique())
+    unique_teams = sorted(list(set(unique_home_teams).union(set(unique_away_teams))))
     
     return model, le, scaler, feature_columns, unique_teams
 
@@ -43,49 +45,54 @@ with st.form("match_details"):
     submitted = st.form_submit_button("Predict Tournament")
 
 if submitted:
-    # Map day of week to number (Monday=0)
-    day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, 
-               "Friday": 4, "Saturday": 5, "Sunday": 6}
-    
-    # Create input dataframe
-    input_data = {
-        'home_team': [home_team],
-        'away_team': [away_team],
-        'year': [year],
-        'month': [month],
-        'day_of_week': [day_map[day_of_week]],
-        'result': [result]
-    }
-    
-    df = pd.DataFrame(input_data)
-    
-    # One-hot encode the categorical features
-    X = pd.get_dummies(df)
-    
-    # Ensure all training columns are present (fill missing with 0)
-    for col in feature_columns:
-        if col not in X.columns:
-            X[col] = 0
-    
-    # Reorder columns to match training
-    X = X[feature_columns]
-    
-    # Scale the features
-    X_scaled = scaler.transform(X)
-    
-    # Make prediction
-    preds = model.predict(X_scaled)
-    top3_idx = np.argsort(preds[0])[-3:][::-1]
-    top3_tournaments = le.inverse_transform(top3_idx)
-    top3_probs = preds[0][top3_idx]
-    
-    # Display results
-    st.subheader("Prediction Results")
-    st.write(f"Most likely tournament: **{top3_tournaments[0]}** ({(top3_probs[0]*100):.1f}%)")
-    
-    st.write("Top 3 predicted tournaments:")
-    for tourn, prob in zip(top3_tournaments, top3_probs):
-        st.write(f"- {tourn}: {(prob*100):.1f}%")
+    try:
+        # Map day of week to number (Monday=0)
+        day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, 
+                 "Friday": 4, "Saturday": 5, "Sunday": 6}
+        
+        # Create input dataframe with the exact same structure as training data
+        input_data = {
+            'home_team': [home_team],
+            'away_team': [away_team],
+            'year': [year],
+            'month': [month],
+            'day_of_week': [day_map[day_of_week]],
+            'result': [result]
+        }
+        
+        # Create a DataFrame with all possible columns initialized to 0
+        X = pd.DataFrame(0, index=[0], columns=feature_columns)
+        
+        # Set the appropriate columns to 1 based on input
+        X[f"home_team_{home_team}"] = 1
+        X[f"away_team_{away_team}"] = 1
+        X[f"result_{result}"] = 1
+        
+        # Set the numerical columns
+        X['year'] = year
+        X['month'] = month
+        X['day_of_week'] = day_map[day_of_week]
+        
+        # Scale the features
+        X_scaled = scaler.transform(X)
+        
+        # Make prediction
+        preds = model.predict(X_scaled)
+        top3_idx = np.argsort(preds[0])[-3:][::-1]
+        top3_tournaments = le.inverse_transform(top3_idx)
+        top3_probs = preds[0][top3_idx]
+        
+        # Display results
+        st.subheader("Prediction Results")
+        st.write(f"Most likely tournament: **{top3_tournaments[0]}** ({(top3_probs[0]*100):.1f}%)")
+        
+        st.write("Top 3 predicted tournaments:")
+        for tourn, prob in zip(top3_tournaments, top3_probs):
+            st.write(f"- {tourn}: {(prob*100):.1f}%")
+            
+    except Exception as e:
+        st.error(f"An error occurred during prediction: {str(e)}")
+        st.write("Please try different input values.")
 
 # Add some info
 st.sidebar.markdown("""
