@@ -3,6 +3,11 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+import pickle
+
+# Feature oszlopok betöltése
+with open("feature_columns.pkl", "rb") as f:
+    feature_columns = pickle.load(f)
 
 # Modell betöltése
 @st.cache_resource
