@@ -97,14 +97,3 @@ if submitted:
     except Exception as e:
         st.error(f"An error occurred during prediction: {str(e)}")
         st.write("Please try different input values.")
-
-# Add some info
-st.sidebar.markdown("""
-**About this app:**
-This app predicts which football tournament a match belongs to based on:
-- Home and away teams (selected from known teams)
-- Date information
-- Match result
-
-The model was trained on historical international football match data.
-""")
